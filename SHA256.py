@@ -1,21 +1,29 @@
+import unicodedata
 import utils as ut
 
-def converter_binario(string):
-    return ''.join(format(ord(c), '08b') for c in string) + '1'
+def message_block(string):
+    # Convert the string to binary
+    string_n = unicodedata.normalize("NFC", string)  # Normaliza os acentos
+    stringBinary = ''.join(format(byte, '08b') for byte in string_n.encode('utf-8'))
 
-def prepend_string(string):
-    zeros_to_add = '0' * (448 - len(string))
-    return  string + zeros_to_add
+    # Add a '1' to the end of the string
+    stringBinary += '1'
 
-def add_lenght_to_block(block, original_message):
-    block += format(len(original_message) * 8, '064b')
-    return block  
+    # Prepend the string to the message block
+    while (len(stringBinary) % 512) != 448:
+        stringBinary += '0'
 
-def create_chunck(block):
-    chuncks = []
-    for i in range(0, len(block), 512):
-        chuncks.append(block[i:i+512])
-    return chuncks
+    # Append the length of the string in bits
+    stringBinary += format(len(string) * 8, '064b')
+
+    return stringBinary
+
+def create_chunk(block_message):
+    # Split the message into chunks of 512 bits, including the last chunk even if it's smaller than 512 bits
+    chunks = []
+    for i in range(0, len(block_message), 512):
+        chunks.append(block_message[i:i + 512])
+    return chunks
 
 def rotate_and_shift_a0(line_block):
     line_block = int(line_block, 2)
@@ -91,6 +99,17 @@ def CalculateA(Temp1, Temp2):
 
 def message_schedule(chunks):
     # here we are going to run trough the chunks and create the message schedule
+
+# Inicialize the hash values
+    h0 = format(int(ut.get_fractional_part((2**0.5)) * (2**32)), '032b')
+    h1 = format(int(ut.get_fractional_part((3**0.5)) * (2**32)), '032b')
+    h2 = format(int(ut.get_fractional_part((5**0.5)) * (2**32)), '032b')
+    h3 = format(int(ut.get_fractional_part((7**0.5)) * (2**32)), '032b')
+    h4 = format(int(ut.get_fractional_part((11**0.5)) * (2**32)), '032b')
+    h5 = format(int(ut.get_fractional_part((13**0.5)) * (2**32)), '032b')
+    h6 = format(int(ut.get_fractional_part((17**0.5)) * (2**32)), '032b')
+    h7 = format(int(ut.get_fractional_part((19**0.5)) * (2**32)), '032b')
+
     for chunk in chunks:
         w=[]
         
@@ -110,26 +129,14 @@ def message_schedule(chunks):
 
             i += 1
 
-
-        # Inicialize the hash values
-        h0 = format(int(ut.get_fractional_part((2**0.5)) * (2**32)), '032b')
-        h1 = format(int(ut.get_fractional_part((3**0.5)) * (2**32)), '032b')
-        h2 = format(int(ut.get_fractional_part((5**0.5)) * (2**32)), '032b')
-        h3 = format(int(ut.get_fractional_part((7**0.5)) * (2**32)), '032b')
-        h4 = format(int(ut.get_fractional_part((11**0.5)) * (2**32)), '032b')
-        h5 = format(int(ut.get_fractional_part((13**0.5)) * (2**32)), '032b')
-        h6 = format(int(ut.get_fractional_part((17**0.5)) * (2**32)), '032b')
-        h7 = format(int(ut.get_fractional_part((19**0.5)) * (2**32)), '032b')
-
-
         # Initialize the constants
         prime_list = ut.get_prime_numbers(64)
         k = []
-        print("PRIME LIST")
+        # print("PRIME LIST")
         for i in range(0, 64):
             frac_part = int(ut.get_fractional_part((prime_list[i]**(1/3))) * (2**32))
             k.append(format(frac_part, '032b'))
-            print(k[i])
+            # print(k[i])
         # Incialize the working variables
         a = h0
         b = h1
@@ -165,22 +172,23 @@ def message_schedule(chunks):
             b = a
             a = CalculateA(Temp1, Temp2)
         
-        h0 = (int(h0, 2) + int(a, 2)) & 0xFFFFFFFF
+        h0 = format((int(h0, 2) + int(a, 2)) & 0xFFFFFFFF, '032b')
+        h1 = format((int(h1, 2) + int(b, 2)) & 0xFFFFFFFF, '032b')
+        h2 = format((int(h2, 2) + int(c, 2)) & 0xFFFFFFFF, '032b')
+        h3 = format((int(h3, 2) + int(d, 2)) & 0xFFFFFFFF, '032b')
+        h4 = format((int(h4, 2) + int(e, 2)) & 0xFFFFFFFF, '032b')
+        h5 = format((int(h5, 2) + int(f, 2)) & 0xFFFFFFFF, '032b')
+        h6 = format((int(h6, 2) + int(g, 2)) & 0xFFFFFFFF, '032b')
+        h7 = format((int(h7, 2) + int(h, 2)) & 0xFFFFFFFF, '032b')
 
-        h1 = (int(h1, 2) + int(b, 2)) & 0xFFFFFFFF
-        
-        h2 = (int(h2, 2) + int(c, 2)) & 0xFFFFFFFF
-
-        h3 = (int(h3, 2) + int(d, 2)) & 0xFFFFFFFF
-
-        h4 = (int(h4, 2) + int(e, 2)) & 0xFFFFFFFF
-
-        h5 = (int(h5, 2) + int(f, 2)) & 0xFFFFFFFF
-
-        h6 = (int(h6, 2) + int(g, 2)) & 0xFFFFFFFF
-
-        h7 = (int(h7, 2) + int(h, 2)) & 0xFFFFFFFF
-
+    h0 = int(h0, 2)
+    h1 = int(h1, 2)
+    h2 = int(h2, 2)
+    h3 = int(h3, 2)
+    h4 = int(h4, 2)
+    h5 = int(h5, 2)
+    h6 = int(h6, 2)
+    h7 = int(h7, 2) 
 
     hash_SHA256 = ''.join(format(h, '08x') for h in [h0, h1, h2, h3, h4, h5, h6, h7])
 
@@ -188,25 +196,18 @@ def message_schedule(chunks):
 
 ########### MAIN ###########
 string_to_encrypt = input("Enter the string to encrypt: ")
-
 # The first step is to covert the string to binary and add a '1' to the end of the string
 # The '1' will be our delimiter
-stringBinary = converter_binario(string_to_encrypt)
-print("ORIGINAL STRING: ", stringBinary)
-# Now we have to prepend the string to the message block
-block_message = prepend_string(stringBinary)
 
-# Here we have the message block
+block_message = message_block(string_to_encrypt)
+# here create the block message
 
-# The next step would be to add the lenght of the original message to the end of the block
-block_message = add_lenght_to_block(block_message, string_to_encrypt)
-ut.print_em_blocos(block_message)
-
-""" NEED TO BE 512 BITS """
-print("LENGTH BLOCK MESSAGE - ", len(block_message))
+print("LENGTH: ", len(block_message))
+""" NEED TO BE 512 BITS per BLOCK """
 
 # Now we have to create the chuncks, they will be 512 bits long
-chunks = create_chunck(block_message)
+chunks = create_chunk(block_message)
+print("\nCHUNKS: ", chunks)
 
 # The next step is to create the message schedule
 hash_256 = message_schedule(chunks)
