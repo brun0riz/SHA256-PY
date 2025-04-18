@@ -1,10 +1,9 @@
-import unicodedata
 import utils as ut
 
 def message_block(string):
     # Convert the string to binary
-    string_n = unicodedata.normalize("NFC", string)  # Normaliza os acentos
-    stringBinary = ''.join(format(byte, '08b') for byte in string_n.encode('utf-8'))
+    string_n = string.encode('utf-8')  
+    stringBinary = ''.join(format(byte, '08b') for byte in string_n)
 
     # Add a '1' to the end of the string
     stringBinary += '1'
@@ -14,7 +13,7 @@ def message_block(string):
         stringBinary += '0'
 
     # Append the length of the string in bits
-    stringBinary += format(len(string) * 8, '064b')
+    stringBinary += format(len(string_n) * 8, '064b')
 
     return stringBinary
 
@@ -146,7 +145,6 @@ def message_schedule(chunks):
         f = h5
         g = h6
         h = h7
-        print("\n")
 
         for i in range(64):
             # Calculate the Majority and Chioce variables
@@ -194,25 +192,19 @@ def message_schedule(chunks):
 
     return hash_SHA256
 
-########### MAIN ###########
-string_to_encrypt = input("Enter the string to encrypt: ")
-# The first step is to covert the string to binary and add a '1' to the end of the string
-# The '1' will be our delimiter
+def generate_hash(string_to_encrypt):
+    # The first step is to covert the string to binary and add a '1' to the end of the string
+    # The '1' will be our delimiter
+    block_message = message_block(string_to_encrypt)
+    # here create the block message
 
-block_message = message_block(string_to_encrypt)
-# here create the block message
+    # Now we have to create the chuncks, they will be 512 bits long
+    chunks = create_chunk(block_message)
 
-print("LENGTH: ", len(block_message))
-""" NEED TO BE 512 BITS per BLOCK """
+    # The next step is to create the message schedule
+    hash_256 = message_schedule(chunks)
 
-# Now we have to create the chuncks, they will be 512 bits long
-chunks = create_chunk(block_message)
-print("\nCHUNKS: ", chunks)
-
-# The next step is to create the message schedule
-hash_256 = message_schedule(chunks)
-
-print("HASH SHA256: ", hash_256)
+    return hash_256
 
 
 

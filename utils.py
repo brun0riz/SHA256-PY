@@ -33,3 +33,8 @@ def get_prime_numbers(quant_prime):
 
     return prime_numbers
 
+# Euclid's algorithm to find the GCD of two numbers
+def gbc(a, b):
+    while b != 0:
+        a, b = b, a % b
+    return a
